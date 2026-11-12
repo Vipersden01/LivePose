@@ -46,6 +46,8 @@ public abstract class BrioIPC : IBrioIPC
     public abstract int APIMajor { get; }
     public abstract int APIMinor { get; }
 
+    public virtual string? PluginInternalName => null;
+
     readonly TimeSpan _interval = TimeSpan.FromSeconds(10);
 
     DateTime _lastCheckTime = DateTime.MinValue;
@@ -68,7 +70,7 @@ public abstract class BrioIPC : IBrioIPC
 
         try
         {
-            bool installed = GetPluginInterface().InstalledPlugins.Any(x => x.Name == Name && x.IsLoaded == true);
+            bool installed = GetPluginInterface().InstalledPlugins.Any(x => x.IsLoaded && (x.Name == Name || (PluginInternalName != null && x.InternalName == PluginInternalName)));
             if(!installed)
             {
                 LivePose.Log.Verbose($"{Name} not present");

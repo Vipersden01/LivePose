@@ -13,6 +13,7 @@ namespace LivePose.IPC;
 
 public class HeelsService : BrioIPC {
     public override string Name => "Simple Heels";
+    public override string? PluginInternalName => "SimpleHeels";
 
     public const string TagName = "LivePose_v2";
     
@@ -95,10 +96,7 @@ public class HeelsService : BrioIPC {
 
             var data = _ipcService.GetPose(0);
 
-            if(string.IsNullOrWhiteSpace(data)) {
-                _removeTag?.InvokeAction(0, TagName);
-                return;
-            }
+            if(string.IsNullOrWhiteSpace(data)) return;
             
             _setTag?.InvokeAction(0, TagName, Compress(data));
             
