@@ -344,6 +344,10 @@ namespace LivePose.Capabilities.Posing
 
                     ApplyTimelinePose(currentBodyPose, currentUpperBodyPose, currentFacePose);
                     ApplyMinionPose(minion);
+
+                    if (chr->ObjectIndex == 0) {
+                        _heelsService.SetPlayerPoseTag();
+                    }
                 }
             }
 

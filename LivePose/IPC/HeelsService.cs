@@ -82,25 +82,43 @@ public class HeelsService : BrioIPC {
 
 
     private CancellationTokenSource? cancellationTokenSource;
+    private bool _disposed;
+    private int _emptyPoseRetries;
+    private const int MaxEmptyPoseRetries = 30;
     
     public void SetPlayerPoseTag() {
+        if(_disposed) return;
+        _emptyPoseRetries = 0;
+        SchedulePoseTagUpdate();
+    }
+
+    private void SchedulePoseTagUpdate() {
+        if(_disposed) return;
+
         cancellationTokenSource?.Cancel();
         cancellationTokenSource = new CancellationTokenSource();
 
         var token = cancellationTokenSource.Token;
+        var delay = _emptyPoseRetries == 0 ? TimeSpan.FromMilliseconds(500) : TimeSpan.FromSeconds(1);
 
         _framework.RunOnTick(() => {
-            if(token.IsCancellationRequested) return;
+            if(token.IsCancellationRequested || _disposed) return;
             
             LivePose.Log.Debug("Updating LivePose Tag for local player.");
 
             var data = _ipcService.GetPose(0);
 
-            if(string.IsNullOrWhiteSpace(data)) return;
-            
+            if(string.IsNullOrWhiteSpace(data)) {
+                if(_emptyPoseRetries >= MaxEmptyPoseRetries) return;
+                _emptyPoseRetries++;
+                SchedulePoseTagUpdate();
+                return;
+            }
+
+            _emptyPoseRetries = 0;
             _setTag?.InvokeAction(0, TagName, Compress(data));
             
-        }, delay: TimeSpan.FromMilliseconds(500), cancellationToken: token);
+        }, delay: delay, cancellationToken: token);
     }
 
     private string Compress(string str) {
@@ -149,6 +167,7 @@ public class HeelsService : BrioIPC {
     }
 
     public override void Dispose() {
+        _disposed = true;
         cancellationTokenSource?.Cancel();
         _tagChanged?.Unsubscribe(OnTagChanged);
         ClearPlayerPoseTag();
